@@ -36,8 +36,8 @@ class UserLogin:
         return hash_object.hexdigest()        # Get the hexadecimal digest of the hashed password
 
     def load_users(self):
-        if os.path.exists("users.txt"):
-            with open("users.txt", "r") as file:
+        if os.path.exists("users.csv"):
+            with open("users.csv", "r") as file:
                 for line in file:
                     user = line.strip().split(",")
                     self.users.append({"username": user[0], "password": user[1]})
@@ -72,7 +72,7 @@ class UserLogin:
         hash_password = self.__hash_password(password)
         self.users.append({"username": username, "password": hash_password})
 
-        with open("users.txt", "a") as file:
+        with open("users.csv", "a") as file:
             file.write(f"{username},{hash_password}\n")
 
         print("User created successfully.")
@@ -128,13 +128,13 @@ class Taskmanager:
     def load_task(self, user) -> None:
         self.__task = []
         user = user.replace(" ", "_")
-        task_file = f"{user}_task.txt"
+        task_file = f"{user}_task.csv"
         try:
             if os.path.exists(task_file):
                 with open(task_file, "r") as file:
                     for line in file:
                         task = line.strip().split(",")
-                        self.__task.append({"Task": task[0], "Date": task[1], "Status": task[2]})
+                        self.__task.append({"Taskid": task[0], "Task": task[1], "Date": task[2], "Status": task[3]})
             else:
                 with open(task_file, "w") as file:
                     pass
@@ -144,15 +144,15 @@ class Taskmanager:
 
     def update_file(self, user) -> None:
         user = user.replace(" ", "_")
-        with open("{}_task.txt".format(user), "w") as file:
+        with open("{}_task.csv".format(user), "w") as file:
             for task in self.__task:
-                file.write(f"{task['Task']},{task['Date']},{task['Status']}\n")
+                file.write(f"{task['Taskid']}, {task['Task']},{task['Date']},{task['Status']}\n")
 
     def add_task(self, loginuser) -> None:
         task = {}
         task["Task"] = input("Enter the task: ")
         if task["Task"] == "":
-            print("Task cannot be empty. Please enter a valid task.")
+            print("Task cannot be empty. Please enter a valid atask.")
             return
         
         task["Date"] = input("Enter the date (YYYY-MM-DD): ")
@@ -161,6 +161,7 @@ class Taskmanager:
             return
         
         task["Status"] = "Pending"
+        task["Taskid"] = str(len(self.__task) + 1)
         self.__task.append(task)
 
         self.update_file(loginuser["username"])
@@ -179,8 +180,8 @@ class Taskmanager:
             print("No task to update.")
             return
         print(tabulate(self.__task, headers="keys", tablefmt="grid"))
-        task = input("Enter the task to update: ")
-        task = list(filter(lambda t: t["Task"] == task, self.__task))
+        task = input("Enter the task id to update: ")
+        task = list(filter(lambda t: t["Taskid"] == str(task), self.__task))
         if len(task) == 0:
             print("Task not found. Please enter a valid task.")
             return
@@ -200,12 +201,17 @@ class Taskmanager:
             print("No task to delete.")
             return
         print(tabulate(self.__task, headers="keys", tablefmt="grid"))
-        task = input("Enter the task to delete: ")
-        task = list(filter(lambda t: t["Task"] == task, self.__task))
+        task = input("Enter the task id to delete: ")
+        task = list(filter(lambda t: t["Taskid"] == str(task), self.__task))
         if len(task) == 0:
             print("Task not found. Please enter a valid task.")
             return
         self.__task.remove(task[0])
+        
+        # Reassign Task IDs after deletion to keep them sequential
+        for idx, task in enumerate(self.__task):
+            task["Taskid"] = str(idx + 1)  # Reassign Task IDs starting from 1
+
         self.update_file(loginuser["username"])
         print("Task deleted successfully.\n")
 
@@ -255,7 +261,7 @@ if __name__ == "__main__":
     user.load_users()
     loginuser = user.user_login()
 
-    os.system("clear")
+    #os.system("clear")
     # Create an instance of Taskmanager class
     task = Taskmanager()
     while loginuser != {}:
@@ -267,4 +273,4 @@ if __name__ == "__main__":
         # Manage the task
         loginuser = task.task_choice(choice, loginuser)
         input("Press any key to continue...")
-        os.system("clear")
+        #os.system("clear")
